@@ -1,0 +1,43 @@
+version: '1'
+services:
+  docker-registry:
+    image: registry:latest
+    ports:
+      - '5555:5000'
+    restart: always
+
+  docker:
+    image: docker:stable-dind
+    privileged: true
+    links:
+      - docker-registry:reg
+    command: --insecure-registry reg:5000
+    restart: always
+
+  invoice-mysql:
+    image: invoice-mysql
+    volumes:
+      - ./data/mysql:/data/db
+    restart: always
+
+  invoce-api:
+    image: invoice-api
+    ports:
+      - '3333:3000'
+    links:
+      - invoice-job:job
+      - invoice-mysql:mysql
+    environment:
+      - NODE_ENV=production
+    restart: always
+
+  pana-job:
+    image: invoce-job
+    links:
+      - docker:docker
+    environment:
+      - DOCKER_HOST=tcp://docker:2375
+      - NODE_ENV=production
+    volumes:
+      - ~/.docker.env:/etc/docker.env:ro
+    restart: always
