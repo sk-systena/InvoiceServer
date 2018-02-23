@@ -1,4 +1,4 @@
-version: '1'
+version: '2'
 services:
   docker-registry:
     image: registry:latest
@@ -15,29 +15,37 @@ services:
     restart: always
 
   invoice-mysql:
-    image: invoice-mysql
+    build: ../InvoiceDB
+    image: invoicemysql
     volumes:
       - ./data/mysql:/data/db
     restart: always
 
-  invoce-api:
-    image: invoice-api
+  invoce-app:
+    build: ../InvoiceApp
+    image: invoiceapp
     ports:
-      - '3333:3000'
+      - '10000:10000'
     links:
-      - invoice-job:job
       - invoice-mysql:mysql
+    restart: always
+
+  invoice-web:
+    build: ../InvoiceWeb/
+    image: invoceweb
+    ports:
+      - '10001:10001'
     environment:
       - NODE_ENV=production
     restart: always
 
-  pana-job:
-    image: invoce-job
+  invoice-ci:
+    build: ../InvoiceCI/
+    image: invoceci
+    ports:
+      - '443:443'
     links:
-      - docker:docker
+      - invoice-app:invoiceapp
     environment:
-      - DOCKER_HOST=tcp://docker:2375
       - NODE_ENV=production
-    volumes:
-      - ~/.docker.env:/etc/docker.env:ro
     restart: always
